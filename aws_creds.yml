@@ -1,6 +1,15 @@
 - hosts: tag_AnsibleGroup_bastions
   gather_facts: true
   become: true
+  vars:
+    tower_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          35356362363961363938616637393737313062306162316531333064646533373130366133623832
+          3139343038313464373861303635326433383262376539310a353735613933366565623566393138
+          35643963643636316661636433393639663930376133303737356630326338333035313337316537
+          6533353062343666340a373166626639633430653530393238633538313961313565346261373362
+          3137
+
   tasks:
   - name: Install required packages 
     yum: 
@@ -11,13 +20,16 @@
       - python-pip 
       - python-devel 
       - gcc
+
   - name: Install tower-cli
     pip:
      name: ansible-tower-cli
      state: latest
+
   - name: List key files
     shell: (cd /root/.ssh; find . -maxdepth 1 -type f -iname '*key.pem')| cut -d'/' -f2
     register: file_to_copy
+
   - name: Tower Creds key file
     tower_credential:
       name: Creds for AWS instances
@@ -26,29 +38,31 @@
       kind: ssh
       tower_host: tower1.{{tower_guid}}.example.opentlc.com
       tower_username: admin
-      tower_password: r3dh4t1!
+      tower_password: "{{ tower_password }}"
       tower_verify_ssl: no
       ssh_key_data: "/root/.ssh/{{ file_to_copy.stdout }}"
       username: ec2-user
+
   - name: Update Prod Job template
     tower_job_template:
       name: "3 tier app on Prod"
-      machine_credential: "Creds for AWS instances"
+      credential: "Creds for AWS instances"
       tower_host: tower1.{{tower_guid}}.example.opentlc.com
       tower_username: admin
-      tower_password: r3dh4t1!
+      tower_password: "{{ tower_password }}"
       tower_verify_ssl: no
       state: present
       job_type: run
       playbook: site-3tier-app.yml
       project: "Homework Assignment"
+
   - name: Update Prod Smoke Job template
     tower_job_template:
       name: "Smoke test Prod env"
-      machine_credential: "Creds for AWS instances"
+      credential: "Creds for AWS instances"
       tower_host: tower1.{{tower_guid}}.example.opentlc.com
       tower_username: admin
-      tower_password: r3dh4t1!
+      tower_password: "{{ tower_password }}"
       tower_verify_ssl: no
       state: present
       job_type: run

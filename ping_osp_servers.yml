@@ -1,0 +1,86 @@
+- name: Create inmemory inventory from OSP
+  hosts: workstation
+  gather_facts: false
+
+  tasks:  
+
+  - name: Fetch Instance Info
+    os_server_facts:
+      cloud: ospcloud
+      region_name: RegionOne
+    register: result
+
+# - name: show result
+#   debug:
+#     var: result
+
+  - name: show only power state
+    debug:
+      msg: "Server: {{ item.name }} have power state: {{ item.power_state }}"
+    with_items: "{{ result.ansible_facts.openstack_servers }}"
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: Add host metadata group
+    add_host:
+      name: "{{ item.public_v4 }}"
+      group: "{{ item.metadata.group }}"
+      ansible_ssh_private_key_file: /home/cloud-user/.ssh/openstack.pem
+      ansible_ssh_user: cloud-user
+    with_items: "{{result.ansible_facts.openstack_servers}}"
+    loop_control:
+      label: "{{ item.name  }}"
+
+  - name: Add host metadata deployment
+    add_host:
+      name: "{{ item.public_v4 }}"
+      group: "{{ item.metadata.deployment_name }}"
+      ansible_ssh_private_key_file: /home/cloud-user/.ssh/openstack.pem
+      ansible_ssh_user: cloud-user
+    with_items: "{{result.ansible_facts.openstack_servers}}"
+    loop_control:
+      label: "{{ item.name  }}"
+
+  - name: Add host by name
+    add_host:
+      name: "{{ item.public_v4 }}"
+      group: "{{ item.name }}"
+      ansible_ssh_private_key_file: /home/cloud-user/.ssh/openstack.pem
+      ansible_ssh_user: cloud-user
+    with_items: "{{ result.ansible_facts.openstack_servers }}"
+    loop_control:
+      label: "{{ item.name  }}"
+
+  - name: show groups
+    debug: 
+      var: groups
+
+  - name: start serwers with power_state 4
+    os_server_action:
+      action: start
+      cloud: ospcloud
+      server: "{{ item.name }}"
+    with_items: "{{ result.ansible_facts.openstack_servers }}"
+    loop_control:
+      label: "{{ item.name }}"
+    when: item.power_state == 4
+
+  - name: Wait for servers to be available
+    wait_for:
+      host: "{{ item.public_v4 }}"
+      port: 22
+      search_regex: OpenSSH
+      timeout: 600
+    with_items: "{{ result.ansible_facts.openstack_servers }}"
+    loop_control:
+      label: "{{ item.name }}"
+    delegate_to: "{{ inventory_hostname }}"
+    when: item.power_state == 4
+
+- name: Ping hosts from QA group
+  hosts: QA
+  gather_facts: no
+  tasks:     
+  
+  - ping:
+
