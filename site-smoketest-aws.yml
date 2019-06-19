@@ -4,7 +4,7 @@
   tasks:
   - name: Use Uri module for wrting smoke test.
     uri:    
-      url: "http://frontend1.{{ ANSIBLE_ADVANCE_GUID }}.example.opentlc.com"
+      url: "http://frontend1.f1c6.example.opentlc.com"
       return_content: yes
     register: webpage
     ignore_errors: yes
