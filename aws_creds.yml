@@ -48,6 +48,7 @@
       credential: "Creds for AWS instances"
       tower_host: tower1.{{tower_guid}}.example.opentlc.com
       tower_username: admin
+#      tower_password: 
       tower_password: "{{ tower_password }}"
       tower_verify_ssl: no
       state: present

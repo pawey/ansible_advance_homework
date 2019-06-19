@@ -6,10 +6,10 @@
       cloud: ospcloud
       state: "{{ item.value.state }}"
       name: "{{ item.value.name }}"
-      flavor: "{{ item.value.flavor }}"
-      key_name: "{{ item.value.key_name }}"
       image: "{{ item.value.image }}"
+      flavor: "{{ item.value.flavor }}"
       network: int_network
+      key_name: "{{ item.value.key_name }}"
       security_groups: "{{ item.value.security_group }}"
       meta: 
         deployment_name: "{{ item.value.meta.0.deployment_name }}"
@@ -23,7 +23,7 @@
   with_dict: "{{ osp_servers }}"
   loop_control:
     label: "{{ item.value.name }}"
-  register: vm
+  register: openstackvar
 
 - name: Add floating IP to Servers
   os_floating_ip:
@@ -36,18 +36,22 @@
     label: "{{ item.value.name }}"
   register: vmFloatingIP   
 
-- name: Show floating (public) IP
+- name: DISPLAY FLOATING IP (public)
   debug:
-    msg: "Server name: {{ vm.results.0.server.name  }}; configured IP: {{ vmFloatingIP.results.0.floating_ip.floating_ip_address }}"
+    msg: "Server name: {{ openstackvar.results.0.server.name  }}; configured IP: {{ vmFloatingIP.results.0.floating_ip.floating_ip_address }}"
+  #ignore_errors:
   ignore_errors: yes
 
-- name: Wait for servers to be available
+- name: Wait for server to be available
   wait_for:
     host: "{{ item.floating_ip.floating_ip_address }}"
     port: 22
     search_regex: OpenSSH
     timeout: 600
   with_items: "{{ vmFloatingIP.results }}"
+        #with_items: "{{openstackvar.results
+  #loop:
+  #item.value.name
   loop_control:
     label: "{{ item.item.value.name }}"
   delegate_to: "{{ inventory_hostname }}" 

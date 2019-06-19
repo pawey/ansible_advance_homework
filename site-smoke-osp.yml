@@ -1,6 +1,8 @@
 - hosts: workstation
   gather_facts: false
 
+
+
   tasks:
   - name: OpenStack servers
     os_server_facts:
@@ -10,7 +12,7 @@
     tags:
       - osp.smoke
 
-  - name: Frontend public IP 
+  - name: Frontend IP public
     debug:
       msg: "{{ openstack_info.ansible_facts.openstack_servers[0].public_v4 }}"
 
@@ -18,17 +20,17 @@
     uri:
       url: http://{{ openstack_info.ansible_facts.openstack_servers[0].public_v4 }}
       return_content: yes
-    register: webpage
+    register: webpageoutput
     ignore_errors: yes
     tags:
       - osp.smoke
 
-  - name: show curl output
+  - name: OUTPUT OF CURL
     debug: 
-      var: webpage.content
+      var: webpageoutput.content
 
   - name: Fail if 'Ansible has done its job' is not in the page content
     fail:
-    when: "'Ansible has done its job' not in webpage.content"
+    when: "'Ansible has done its job' not in webpageoutput.content"
     tags:
       - osp.smoke
